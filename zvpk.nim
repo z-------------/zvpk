@@ -56,9 +56,12 @@ proc zvpk(filenames: seq[string]; checkHashes = false) =
     for fullpath in v.entries.keys:
       echo fullpath
     if checkHashes:
-      let (checkResult, checkMessage) = v.checkHashes()
-      if not checkResult:
-        fatal "Hash check failed: ", checkMessage
+      try:
+        let (checkResult, checkMessage) = v.checkHashes()
+        if not checkResult:
+          fatal "Hash check failed: ", checkMessage
+      except CatchableError as e:
+        fatal "Hash check failed: ", e.msg
 
 when isMainModule:
   import pkg/cligen
