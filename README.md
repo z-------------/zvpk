@@ -4,4 +4,4 @@ Read VPK files on the command line. Thin interface on top of [vpk](https://githu
 
 ## Usage
 
-See `zvpk --help`
+See `zvpk --help`.
