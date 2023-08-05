@@ -14,55 +14,40 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pkg/vpk/read
+import std/[
+  terminal,
+  options,
+  strformat,
+]
 
-when isMainModule:
-  import std/[
-    options,
-    os,
-    parseopt,
-    strformat,
-    tables,
-  ]
+template fatal(msg: varargs[untyped]) =
+  stderr.styledWrite fgRed, msg, "\p"
+  quit QuitFailure
 
-  template die(msg: string; status = 1) =
-    stderr.writeLine(msg)
-    quit(status)
-
-  proc parseParams(params: seq[string]): tuple[opts: Table[string, string]; args: seq[string]] =
-    var optParser = initOptParser(params)
-    for kind, key, val in optParser.getopt:
-      case kind
-      of cmdArgument:
-        result.args.add(key)
-      else:
-        result.opts[key] = val
+proc zvpk(filenames: seq[string]; checkHashes = false) =
+  if filenames.len < 1:
+    fatal "No filename specified"
+  if filenames.len > 2:
+    fatal "Too many arguments"
 
   let
-    params = parseParams(commandLineParams())
-    filename =
-      if params.args.len > 0:
-        params.args[0]
-      else:
-        die("no filename specified")
+    filename = filenames[0]
     entryName =
-      if params.args.len > 1:
-        params.args[1].some
-      else:
-        none(string)
-    isCheckHashes = params.opts.hasKey("check-hashes")
+      if filenames.len > 1: filenames[1].some
+      else: string.none
+
   var v: Vpk
   try:
     v = readVpk(filename)
-  except IOError as e:
-    stderr.writeLine(e.msg)
-    quit(QuitFailure)
+  except CatchableError as e:
+    fatal "Failed to read VPK: ", e.msg
 
   if entryName.isSome:
     let entry =
       try:
         v.entries[entryName.get]
       except KeyError:
-        quit(&"Entry '{entryName.get}' not found")
+        fatal &"Entry '{entryName.get}' not found"
     if entry.totalLength > 0:
       var fileBuf = newString(entry.totalLength)
       v.readFile(entry, addr fileBuf[0], entry.totalLength)
@@ -70,7 +55,17 @@ when isMainModule:
   else:
     for fullpath in v.entries.keys:
       echo fullpath
-    if isCheckHashes:
+    if checkHashes:
       let (checkResult, checkMessage) = v.checkHashes()
       if not checkResult:
-        stderr.writeLine("Hash check failed: " & checkMessage)
+        fatal "Hash check failed: ", checkMessage
+
+when isMainModule:
+  import pkg/cligen
+
+  dispatch(
+    zvpk,
+    help = {
+      "filenames": "<filename> <entry name>",
+    }
+  )

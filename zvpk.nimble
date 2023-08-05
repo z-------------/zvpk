@@ -12,3 +12,4 @@ bin           = @["zvpk"]
 
 requires "nim >= 1.4.8"
 requires "vpk >= 0.1.0"
+requires "cligen >= 1.6.13"
