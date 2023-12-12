@@ -50,7 +50,7 @@ proc zvpk(filenames: seq[string]; checkHashes = false) =
         fatal &"Entry '{entryName.get}' not found"
     if entry.totalLength > 0:
       var fileBuf = newString(entry.totalLength)
-      v.readFile(entry, addr fileBuf[0], entry.totalLength)
+      v.readFile(entry, fileBuf)
       stdout.write(fileBuf)
   else:
     for fullpath in v.entries.keys:
